@@ -76,7 +76,7 @@ func readCommand(reader *bufio.Reader) ([]string, error) {
 
 	words := make([]string, 0, count)
 
-	for w := 0; w < count; w++ {
+	for range count {
 		line, err = reader.ReadString('\n')
 
 		if err != nil {
