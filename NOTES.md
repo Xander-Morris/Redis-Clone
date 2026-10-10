@@ -1,0 +1,1 @@
+I started this to make a handwritten Redis clone in Go and see where it takes me. 
