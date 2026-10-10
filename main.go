@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -12,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
-	
+
 	defer listener.Close()
 
 	for {
@@ -28,23 +31,69 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close() 
+	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
 
 	for {
-		message, err := reader.ReadString('\n')
+		words, err := readCommand(reader)
 
 		if err != nil {
 			log.Printf("Client disconnected or error: %v", err)
-			return 
-		}
-
-		_, err = conn.Write([]byte("ACK: " + message))
-		
-		if err != nil {
-			log.Printf("Failed to write to client: %v", err)
 			return
 		}
+
+		log.Printf("%q", words)
+		conn.Write([]byte("+OK\r\n"))
 	}
+}
+
+func getCountFromLine(line string) (int, error) {
+	count, err := strconv.Atoi(strings.TrimSpace(line[1:])) 
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil 
+}
+
+func readCommand(reader *bufio.Reader) ([]string, error) {
+	line, err := reader.ReadString('\n') 
+
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := getCountFromLine(line)
+
+	if err != nil {
+		return nil, err
+	}
+
+	words := make([]string, 0, count)
+
+	for w := 0; w < count; w++ {
+		line, err = reader.ReadString('\n') 
+
+		if err != nil {
+			return nil, err
+		}
+
+		length, err := getCountFromLine(line)
+
+		if err != nil {
+			return nil, err
+		}
+
+		buf := make([]byte, length+2) 
+
+		if _, err := io.ReadFull(reader, buf); err != nil {
+			return nil, err
+		}
+
+		words = append(words, string(buf[:length]))
+	}
+
+	return words, nil
 }
