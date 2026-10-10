@@ -45,7 +45,7 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		result := commands.ExecuteCommand(words)
+		result, err := commands.ExecuteCommand(words)
 		response := fmt.Sprintf("%s\r\n", result)
 		conn.Write([]byte(response))
 	}

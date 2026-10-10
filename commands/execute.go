@@ -9,45 +9,53 @@ type CommandError struct {
 	message string
 }
 
-type ActionFunc func([]string) any 
+func (e *CommandError) Error() string {
+	return e.message
+}
 
-func set(words []string) any {
+type CommandFunc func([]string) (any, *CommandError)
+
+func set(words []string) (any, *CommandError) {
 	if len(words) < 2 {
-		return &CommandError{message: "SET must have key and value"}
+		return nil, &CommandError{message: "SET must have key and value"}
 	}
 
 	key, value := words[0], words[1]
 	store.Set(key, value)
 
-	return nil
+	return nil, nil
 }
 
-func get(words []string) any {
+func get(words []string) (any, *CommandError) {
 	if len(words) < 1 {
-		return &CommandError{message: "GET must have key"}
+		return nil, &CommandError{message: "GET must have key"}
 	}
 
 	key := words[0]
 	val, ok := store.Get(key)
 
 	if !ok {
-		return &CommandError{message: "GET operation failed"} 
+		return nil, nil 
 	}
 
-	return val 
+	return val, nil
 }
 
-var commandMap = map[string]ActionFunc{
+var commandMap = map[string]CommandFunc{
 	"SET": set,
 	"GET": get,
 }
 
-func ExecuteCommand(words []string) (any) {
+func ExecuteCommand(words []string) (any, *CommandError) {
+	if len(words) < 2 {
+		return nil, &CommandError{"All commands must have at least 2 arguments!"}
+	}
+
 	command := words[0]
 
 	if commandFunc, ok := commandMap[command]; ok {
 		return commandFunc(words[1:])
 	}
 
-	return fmt.Sprintf("%s command not defined", command)
+	return nil, &CommandError{fmt.Sprintf("%s is not defined as a command", command)}
 }
