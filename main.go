@@ -1,7 +1,9 @@
 package main
 
 import (
+	"RedisClone/commands"
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -43,23 +45,24 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		log.Printf("%q", words)
-		conn.Write([]byte("+OK\r\n"))
+		result := commands.ExecuteCommand(words)
+		response := fmt.Sprintf("%s\r\n", result)
+		conn.Write([]byte(response))
 	}
 }
 
 func getCountFromLine(line string) (int, error) {
-	count, err := strconv.Atoi(strings.TrimSpace(line[1:])) 
+	count, err := strconv.Atoi(strings.TrimSpace(line[1:]))
 
 	if err != nil {
 		return 0, err
 	}
 
-	return count, nil 
+	return count, nil
 }
 
 func readCommand(reader *bufio.Reader) ([]string, error) {
-	line, err := reader.ReadString('\n') 
+	line, err := reader.ReadString('\n')
 
 	if err != nil {
 		return nil, err
@@ -74,7 +77,7 @@ func readCommand(reader *bufio.Reader) ([]string, error) {
 	words := make([]string, 0, count)
 
 	for w := 0; w < count; w++ {
-		line, err = reader.ReadString('\n') 
+		line, err = reader.ReadString('\n')
 
 		if err != nil {
 			return nil, err
@@ -86,7 +89,7 @@ func readCommand(reader *bufio.Reader) ([]string, error) {
 			return nil, err
 		}
 
-		buf := make([]byte, length+2) 
+		buf := make([]byte, length+2)
 
 		if _, err := io.ReadFull(reader, buf); err != nil {
 			return nil, err
