@@ -3,6 +3,7 @@ package commands
 import (
 	"RedisClone/store"
 	"fmt"
+	"strconv"
 )
 
 type CommandError struct {
@@ -21,7 +22,13 @@ func set(words []string) (any, *CommandError) {
 	}
 
 	key, value := words[0], words[1]
-	store.Set(key, value)
+	conv, err := strconv.Atoi(value)
+
+	if err == nil {
+		store.Set(key, conv)
+	} else {
+		store.Set(key, value)
+	}
 
 	return nil, nil
 }
@@ -41,9 +48,67 @@ func get(words []string) (any, *CommandError) {
 	return val, nil
 }
 
+func delete(words []string) (any, *CommandError) {
+	if len(words) < 1 {
+		return nil, &CommandError{message: "DELETE must have at least 1 key"}
+	}
+
+	for _, key := range words {
+		store.Delete(key)
+	}
+
+	return nil, nil 
+}
+
+func exists(words []string) (any, *CommandError) {
+	if len(words) < 1 {
+		return nil, &CommandError{message: "EXISTS must have a key provided"}
+	}
+
+	val, err := get(words)
+
+	if val != nil {
+		return true, nil 
+	}
+
+	return false, err 
+}
+
+func increment(words []string) (any, *CommandError) {
+	if len(words) < 1 {
+		return nil, &CommandError{message: "INCR must have a key provided"}
+	}
+
+	newVal, err := store.Increment(words[0], 1)
+
+	if err != nil {
+		return nil, &CommandError{message: err.Error()}
+	}
+
+	return newVal, nil 
+}
+
+func decrement(words []string) (any, *CommandError) {
+	if len(words) < 1 {
+		return nil, &CommandError{message: "DECR must have a key provided"}
+	}
+
+	newVal, err := store.Increment(words[0], -1)
+
+	if err != nil {
+		return nil, &CommandError{message: err.Error()}
+	}
+
+	return newVal, nil  
+}
+
 var commandMap = map[string]CommandFunc{
 	"SET": set,
 	"GET": get,
+	"DELETE": delete,
+	"EXISTS": exists,
+	"INCR": increment,
+	"DECR": decrement,
 }
 
 func ExecuteCommand(words []string) (any, *CommandError) {
